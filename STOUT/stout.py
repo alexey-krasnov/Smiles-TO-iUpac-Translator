@@ -43,6 +43,17 @@ reloaded_forward = tf.saved_model.load(default_path.as_posix() + "/translator_fo
 # Load the packed model forward
 reloaded_reverse = tf.saved_model.load(default_path.as_posix() + "/translator_reverse")
 
+# Load important pickle files which consists the tokenizers and the maxlength setting
+inp_lang = pickle.load(
+    open(default_path.as_posix() + "/assets/tokenizer_input.pkl", "rb")
+)
+targ_lang = pickle.load(
+    open(default_path.as_posix() + "/assets/tokenizer_target.pkl", "rb")
+)
+inp_max_length = pickle.load(
+    open(default_path.as_posix() + "/assets/max_length_inp.pkl", "rb")
+)
+
 
 def translate_forward(smiles: str) -> str:
     """Takes user input splits them into words and generates tokens.
@@ -56,16 +67,6 @@ def translate_forward(smiles: str) -> str:
         result (str): The predicted IUPAC names in string format.
     """
 
-    # Load important pickle files which consists the tokenizers and the maxlength setting
-    inp_lang = pickle.load(
-        open(default_path.as_posix() + "/assets/tokenizer_input.pkl", "rb")
-    )
-    targ_lang = pickle.load(
-        open(default_path.as_posix() + "/assets/tokenizer_target.pkl", "rb")
-    )
-    inp_max_length = pickle.load(
-        open(default_path.as_posix() + "/assets/max_length_inp.pkl", "rb")
-    )
     if len(smiles) == 0:
         return ""
     smiles = smiles.replace("\\/", "/")
@@ -76,12 +77,23 @@ def translate_forward(smiles: str) -> str:
             r"\s+(?=[a-z])", "", " ".join(map(str, splitted_list))
         )
         decoded = helper.tokenize_input(tokenized_SMILES, inp_lang, inp_max_length)
-        result_predited = reloaded_forward(decoded)
-        result = helper.detokenize_output(result_predited, targ_lang)
+        result_predicted = reloaded_forward(decoded)
+        result = helper.detokenize_output(result_predicted, targ_lang)
         return result
     else:
         return "Could not generate IUPAC name for SMILES provided."
 
+
+# Load important pickle files which consists the tokenizers and the maxlength setting
+targ_lang_reverse = pickle.load(
+    open(default_path.as_posix() + "/assets/tokenizer_input.pkl", "rb")
+)
+inp_lang_reverse = pickle.load(
+    open(default_path.as_posix() + "/assets/tokenizer_target.pkl", "rb")
+)
+inp_max_length_reverse = pickle.load(
+    open(default_path.as_posix() + "/assets/max_length_targ.pkl", "rb")
+)
 
 def translate_reverse(iupacname: str) -> str:
     """Takes user input splits them into words and generates tokens.
@@ -95,22 +107,12 @@ def translate_reverse(iupacname: str) -> str:
         result (str): The predicted SMILES in string format.
     """
 
-    # Load important pickle files which consists the tokenizers and the maxlength setting
-    targ_lang = pickle.load(
-        open(default_path.as_posix() + "/assets/tokenizer_input.pkl", "rb")
-    )
-    inp_lang = pickle.load(
-        open(default_path.as_posix() + "/assets/tokenizer_target.pkl", "rb")
-    )
-    inp_max_length = pickle.load(
-        open(default_path.as_posix() + "/assets/max_length_targ.pkl", "rb")
-    )
 
     splitted_list = list(iupacname)
     tokenized_IUPACname = " ".join(map(str, splitted_list))
-    decoded = helper.tokenize_input(tokenized_IUPACname, inp_lang, inp_max_length)
+    decoded = helper.tokenize_input(tokenized_IUPACname, inp_lang_reverse, inp_max_length_reverse)
 
-    result_predited = reloaded_reverse(decoded)
-    result = helper.detokenize_output(result_predited, targ_lang)
+    result_predicted = reloaded_reverse(decoded)
+    result = helper.detokenize_output(result_predicted, targ_lang_reverse)
 
     return result
